@@ -29,3 +29,5 @@ https://something.yourcooldomain.com?query_param=123&val=true
 Submit a pull request against this repository with your submission code.
 
 Your code must compile, it must contain valid tests, and your pull request message must contain a table with each URL tested and its CU and compression ratio.
+
+Submissions will be judged based on the time submitted. If there are multiple submissions that display the same performance, the winner will be chose based on the earliest submission.
