@@ -28,7 +28,7 @@ https://something.yourcooldomain.com?query_param=123&val=true
 
 ## How to submit
 
-Submit a pull request against this repository with your submission code.
+Submit a pull request against this repository with your code.
 
 Your code must compile, it must contain valid tests, and your pull request message must contain a table with each URL tested and its CU and compression ratio.
 
