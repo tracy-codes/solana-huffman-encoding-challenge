@@ -1,6 +1,8 @@
 # Solana CU-Efficient Huffman Encoding Challenge
 
-The goal of this challenge is to create a CU-efficient implementation of Huffman Encoding in a Solana program. Specifically, huffman encoding URL strings to allow for large URL strings to be passed into Solana instructions while not eating up precious bytes.
+The goal of this challenge is to create a CU-efficient implementation of Huffman Encoding in a Solana program. Specifically, huffman encoding URL strings to allow for large URL strings to be passed into Solana instructions while not eating up precious bytes in the transaction.
+
+The instruction must be able to then properly decode the message. You can validate this by adding a log that displays the decoded string and comment it out for your CU submission run.
 
 This challenge starts when this repository is made public. The challenge ends at 5:00pm PST.
 
