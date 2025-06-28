@@ -3,43 +3,170 @@ use solana_program::{
     entrypoint,
     entrypoint::ProgramResult,
     msg,
-    program_error::ProgramError,
     pubkey::Pubkey,
+    program_error::ProgramError,
 };
 
-entrypoint!(process_instruction);
+const MAX_TREE_LEN: usize = 512;
+const MAX_OUTPUT_LEN: usize = 256;
 
-pub fn process_instruction(
+const PREFIX_MARKER: char = '\u{00F1}'; // ñ
+const SUFFIX_MARKER: char = '\u{00F2}'; // ò
+
+const PREFIXES: &[(&str, char)] = &[
+    ("https://www.", '1'),
+    ("https://", '2'),
+    ("https://localhost", '3'),
+    ("http://", '4'),
+    ("http://localhost", '5'),
+];
+
+const SUFFIXES: &[(&str, char)] = &[
+    (".com", '1'),
+    (".org", '2'),
+    (".net", '3'),
+    ("/index.html", '4'),
+    (".git", '5'),
+];
+
+#[derive(Clone)]
+struct FlatNode {
+    is_leaf: bool,
+    symbol: char,
+    left: usize,
+    right: usize,
+}
+
+entrypoint!(process_instruction);
+fn process_instruction(
     _program_id: &Pubkey,
     _accounts: &[AccountInfo],
-    instruction_data: &[u8],
+    data: &[u8],
 ) -> ProgramResult {
-    msg!("Instruction: Decode");
+    if data.len() < 4 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
 
-    let decoded = decode_url(instruction_data)?;
-    msg!("Decoded: {}", core::str::from_utf8(&decoded).unwrap_or("<invalid utf8>"));
+    let tree_len = u16::from_le_bytes([data[0], data[1]]) as usize;
+    let bit_len  = u16::from_le_bytes([data[2], data[3]]) as usize;
+
+    if 4 + tree_len > data.len() {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+
+    let tree_bytes = &data[4..4 + tree_len];
+    let bit_data = &data[4 + tree_len..];
+
+    let tree_str = std::str::from_utf8(tree_bytes)
+        .map_err(|_| ProgramError::InvalidInstructionData)?;
+
+    let tree_chars: Vec<char> = tree_str.chars().collect();
+    let mut idx = 0;
+    let mut flat: Vec<FlatNode> = Vec::with_capacity(MAX_TREE_LEN);
+
+    fn parse(tree: &[char], idx: &mut usize, flat: &mut Vec<FlatNode>) -> Result<usize, ProgramError> {
+        if *idx >= tree.len() {
+            return Err(ProgramError::InvalidInstructionData);
+        }
+        let tag = tree[*idx];
+        *idx += 1;
+
+        if tag == '1' {
+            if *idx >= tree.len() {
+                return Err(ProgramError::InvalidInstructionData);
+            }
+            let ch = tree[*idx];
+            *idx += 1;
+            let i = flat.len();
+            flat.push(FlatNode { is_leaf: true, symbol: ch, left: 0, right: 0 });
+            Ok(i)
+        } else if tag == '0' {
+            let l = parse(tree, idx, flat)?;
+            let r = parse(tree, idx, flat)?;
+            let i = flat.len();
+            flat.push(FlatNode { is_leaf: false, symbol: '\0', left: l, right: r });
+            Ok(i)
+        } else {
+            Err(ProgramError::InvalidInstructionData)
+        }
+    }
+
+    let root = parse(&tree_chars, &mut idx, &mut flat)?;
+
+    let mut decoded = [0u8; MAX_OUTPUT_LEN];
+    let mut out_len = 0;
+    let mut total_bits = 0;
+    let mut node = root;
+
+    for &byte in bit_data {
+        for i in (0..8).rev() {
+            if total_bits >= bit_len { break; }
+            total_bits += 1;
+
+            let bit = (byte >> i) & 1;
+            node = if bit == 0 {
+                flat[node].left
+            } else {
+                flat[node].right
+            };
+
+            if flat[node].is_leaf {
+                let ch = flat[node].symbol;
+                let mut buf = [0u8; 4];
+                let ch_bytes = ch.encode_utf8(&mut buf).as_bytes();
+
+                if out_len + ch_bytes.len() > MAX_OUTPUT_LEN {
+                    return Err(ProgramError::InvalidInstructionData);
+                }
+
+                decoded[out_len..out_len + ch_bytes.len()].copy_from_slice(ch_bytes);
+                out_len += ch_bytes.len();
+                node = root;
+            }
+        }
+    }
+
+    // Attempt final push if ended on a leaf
+    if total_bits == bit_len && flat[node].is_leaf {
+        let ch = flat[node].symbol;
+        let mut buf = [0u8; 4];
+        let ch_bytes = ch.encode_utf8(&mut buf).as_bytes();
+        if out_len + ch_bytes.len() <= MAX_OUTPUT_LEN {
+            decoded[out_len..out_len + ch_bytes.len()].copy_from_slice(ch_bytes);
+            out_len += ch_bytes.len();
+        }
+    }
+
+    let raw_str = std::str::from_utf8(&decoded[..out_len])
+        .map_err(|_| ProgramError::InvalidInstructionData)?;
+
+    let restored = restore_url(raw_str);
+    msg!("✅ Decoded URL: {}", restored);
 
     Ok(())
 }
 
-fn decode_url(input: &[u8]) -> Result<Vec<u8>, ProgramError> {
-    let mut result = Vec::with_capacity(128);
+fn restore_url(input: &str) -> String {
+    let mut chars = input.chars().peekable();
+    let mut output = String::new();
 
-    let mut i = 0;
-    while i < input.len() {
-        match input[i] {
-            0x01 => result.extend_from_slice(b"https://"),
-            0x02 => result.extend_from_slice(b"http://"),
-            0x03 => result.extend_from_slice(b".com"),
-            0x04 => result.extend_from_slice(b".in"),
-            0x05 => result.extend_from_slice(b".net"),
-            0x06 => result.extend_from_slice(b".org"),
-            0x07 => result.extend_from_slice(b".git"),
-            0x08 => result.extend_from_slice(b".dev"),
-            byte => result.push(byte),
+    while let Some(ch) = chars.next() {
+        if ch == PREFIX_MARKER {
+            if let Some(code) = chars.next() {
+                if let Some(&(prefix, _)) = PREFIXES.iter().find(|&&(_, c)| c == code) {
+                    output.push_str(prefix);
+                }
+            }
+        } else if ch == SUFFIX_MARKER {
+            if let Some(code) = chars.next() {
+                if let Some(&(suffix, _)) = SUFFIXES.iter().find(|&&(_, c)| c == code) {
+                    output.push_str(suffix);
+                }
+            }
+        } else {
+            output.push(ch);
         }
-        i += 1;
     }
 
-    Ok(result)
+    output
 }
