@@ -203,7 +203,7 @@ fn main() {
 
     let modified = mark_prefix_suffix(url);
     let compressor = UrlCompressor::from_input(&modified);
-    let encoded_bytes = compressor.encode_bytes(&modified);
+    let encoded_bytes = compressor.encode_bytes(url);
 
     println!("Encoded bytes: {:?}", encoded_bytes);
 }

@@ -17,25 +17,6 @@ nostd_panic_handler!();
 const MAX_TREE_LEN: usize = 128;
 const MAX_OUTPUT_LEN: usize = 256;
 
-const PREFIX_MARKER: char = '\u{00F1}'; // ñ
-const SUFFIX_MARKER: char = '\u{00F2}'; // ò
-
-const PREFIXES: &[(&str, char)] = &[
-    ("https://www.", '1'),
-    ("https://", '2'),
-    ("https://localhost", '3'),
-    ("http://", '4'),
-    ("http://localhost", '5'),
-];
-
-const SUFFIXES: &[(&str, char)] = &[
-    (".com", '1'),
-    (".org", '2'),
-    (".net", '3'),
-    ("/index.html", '4'),
-    (".git", '5'),
-];
-
 #[derive(Clone, Copy)]
 struct FlatNode {
     is_leaf: bool,
@@ -165,54 +146,8 @@ fn process_instruction(context: InstructionContext) -> ProgramResult {
 
     let raw_str = core::str::from_utf8(&decoded[..out_len])
         .map_err(|_| ProgramError::InvalidInstructionData)?;
-    restore_url(raw_str)?;
 
-    // let (out_len, restored_buf) = restore_url(raw_str)?;
-    // let restored_str = core::str::from_utf8(&restored_buf[..out_len])
-    //     .map_err(|_| ProgramError::InvalidInstructionData)?;
     // sol_log(&raw_str);
 
     Ok(())
-}
-
-fn restore_url(input: &str) -> Result<(usize, [u8; MAX_OUTPUT_LEN]), ProgramError> {
-    let mut chars = input.chars().peekable();
-    let mut output = [0u8; MAX_OUTPUT_LEN];
-    let mut out_len = 0;
-
-    while let Some(ch) = chars.next() {
-        if ch == PREFIX_MARKER {
-            if let Some(code) = chars.next() {
-                if let Some(&(prefix, _)) = PREFIXES.iter().find(|&&(_, c)| c == code) {
-                    let bytes = prefix.as_bytes();
-                    if out_len + bytes.len() > MAX_OUTPUT_LEN {
-                        return Err(ProgramError::InvalidInstructionData);
-                    }
-                    output[out_len..out_len + bytes.len()].copy_from_slice(bytes);
-                    out_len += bytes.len();
-                }
-            }
-        } else if ch == SUFFIX_MARKER {
-            if let Some(code) = chars.next() {
-                if let Some(&(suffix, _)) = SUFFIXES.iter().find(|&&(_, c)| c == code) {
-                    let bytes = suffix.as_bytes();
-                    if out_len + bytes.len() > MAX_OUTPUT_LEN {
-                        return Err(ProgramError::InvalidInstructionData);
-                    }
-                    output[out_len..out_len + bytes.len()].copy_from_slice(bytes);
-                    out_len += bytes.len();
-                }
-            }
-        } else {
-            let mut buf = [0u8; 4];
-            let encoded = ch.encode_utf8(&mut buf).as_bytes();
-            if out_len + encoded.len() > MAX_OUTPUT_LEN {
-                return Err(ProgramError::InvalidInstructionData);
-            }
-            output[out_len..out_len + encoded.len()].copy_from_slice(encoded);
-            out_len += encoded.len();
-        }
-    }
-
-    Ok((out_len, output))
 }
