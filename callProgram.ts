@@ -36,7 +36,7 @@ const tests = [
   },
 ];
 
-const results: { Name: string; "CU Used": number; Explorer: string }[] = [];
+const results: { Name: string; "CU Used": number; "Compression Ratio": string; Explorer: string }[] = [];
 
 (async () => {
   console.log("Starting compute unit tests...");
@@ -69,12 +69,14 @@ const results: { Name: string; "CU Used": number; Explorer: string }[] = [];
       results.push({
         Name: name,
         "CU Used": cuUsed,
+        "Compression Ratio": (name.length/ (hex.length / 2)).toFixed(2),
         Explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
       });
     } catch (err: any) {
       results.push({
         Name: name,
         "CU Used": -1,
+        "Compression Ratio": "Error",
         Explorer: `Failed: ${err.message}`,
       });
     }
