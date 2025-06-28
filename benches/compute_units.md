@@ -1,3 +1,18 @@
+#### Compute Units: 2025-06-28 20:20:31.364680197 UTC
+
+| Name | CUs | Delta |
+|------|------|-------|
+| http://localhost:3000 | 3721 | -1,148 |
+| http://subdomain.localhost:3000 | 5629 | -1,579 |
+| https://localhost.net | 3864 | -1,106 |
+| https://google.com | 3611 | -1,083 |
+| https://a.a | 2394 | -698 |
+| https://a.com | 2955 | -697 |
+| https://git@github.com:username/repo.git | 6502 | -2,076 |
+| https://a-really-long-url-that-probably-would-be-so-hard-to-actually-use-but-whatever.com | 11568 | -4,569 |
+| https://🦝👀🍹🌏.net | 5285 | -1,642 |
+| https://something.yourcooldomain.com?query_param=123&val=true | 10146 | -3,497 |
+
 #### Compute Units: 2025-06-28 12:55:39.244687890 UTC
 
 | Name | CUs | Delta |

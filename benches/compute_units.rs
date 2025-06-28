@@ -182,16 +182,17 @@ pub fn mollusk() -> Mollusk {
     Mollusk::new(&PROGRAM, "target/deploy/solana_huffman_encoding_challenge")
 }
 
-pub fn create_instruction_data(encoded_url: &[u8]) -> Vec<u8> {
+pub fn create_instruction_data(encoded_url: &[u8], original_size: u32) -> Vec<u8> {
     let mut data = Vec::new();
+    data.extend_from_slice(&original_size.to_le_bytes());
     data.extend_from_slice(&(encoded_url.len() as u32).to_le_bytes());
     data.extend_from_slice(encoded_url);
     data
 }
 
-fn benchmark_url(mollusk: &Mollusk, url: &str) -> (Instruction, Vec<(Pubkey, Account)>) {
+fn benchmark_url(_mollusk: &Mollusk, url: &str) -> (Instruction, Vec<(Pubkey, Account)>) {
     let encoded_url = huffman_encode_url(url);
-    let instruction_data = create_instruction_data(&encoded_url);
+    let instruction_data = create_instruction_data(&encoded_url, url.len() as u32);
 
     let ix_accounts = vec![];
     let ix = Instruction::new_with_bytes(PROGRAM, &instruction_data, ix_accounts);
