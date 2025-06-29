@@ -13,7 +13,7 @@ nostd_panic_handler!();
 fn process_instruction(context: InstructionContext) -> ProgramResult {
     let instruction_data = unsafe { context.instruction_data_unchecked() };
 
-    let (_decoded_len, _decoded_bytes) = unsafe {huffman_decode_url(instruction_data)};
+    let (_decoded_len, _decoded_bytes) = unsafe { huffman_decode_url(instruction_data) };
 
     // For validation - uncomment to log decoded URL (comment out for CU measurement)
     // let res_str = unsafe {

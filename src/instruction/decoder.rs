@@ -50,7 +50,7 @@ pub unsafe fn huffman_decode_url(instruction_data: &[u8]) -> (usize, [u8; 128]) 
     let root_idx = build_tree_iterative(
         instruction_data.get_unchecked(2..2 + tree_size),
         &mut nodes,
-        &mut node_count
+        &mut node_count,
     );
 
     // Optimized decoding loop
@@ -84,7 +84,11 @@ pub unsafe fn huffman_decode_url(instruction_data: &[u8]) -> (usize, [u8; 128]) 
                 if result_len < original_len {
                     let root_node = *nodes.get_unchecked(root_idx as usize);
                     if !root_node.is_leaf {
-                        current_node = if bit == 0 { root_node.left } else { root_node.right };
+                        current_node = if bit == 0 {
+                            root_node.left
+                        } else {
+                            root_node.right
+                        };
                     }
                 }
             } else {
@@ -111,9 +115,8 @@ fn build_tree_iterative(tree_data: &[u8], nodes: &mut [Node; 64], node_count: &m
     if node_type == 1 {
         // Single leaf node case
         unsafe {
-            *nodes.get_unchecked_mut(*node_count as usize) = Node::new_leaf(
-                *tree_data.get_unchecked(pos)
-            );
+            *nodes.get_unchecked_mut(*node_count as usize) =
+                Node::new_leaf(*tree_data.get_unchecked(pos));
         }
         *node_count += 1;
         return root_idx;
@@ -136,9 +139,8 @@ fn build_tree_iterative(tree_data: &[u8], nodes: &mut [Node; 64], node_count: &m
         if node_type == 1 {
             // Leaf node
             unsafe {
-                *nodes.get_unchecked_mut(current_idx as usize) = Node::new_leaf(
-                    *tree_data.get_unchecked(pos)
-                );
+                *nodes.get_unchecked_mut(current_idx as usize) =
+                    Node::new_leaf(*tree_data.get_unchecked(pos));
             }
             pos += 1;
             *node_count += 1;

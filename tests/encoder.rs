@@ -1,4 +1,4 @@
-use std::collections::{ BinaryHeap, HashMap };
+use std::collections::{BinaryHeap, HashMap};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HuffmanTree {
@@ -36,7 +36,7 @@ impl PartialOrd for HuffmanTree {
 
 pub struct HuffmanEncoder {
     codes: HashMap<u8, (u32, u8)>, // byte -> (code, bit_length)
-    tree_bytes: Vec<u8>, // Serialized tree for decoder
+    tree_bytes: Vec<u8>,           // Serialized tree for decoder
 }
 
 impl HuffmanEncoder {
@@ -92,7 +92,7 @@ impl HuffmanEncoder {
         tree: &HuffmanTree,
         codes: &mut HashMap<u8, (u32, u8)>,
         code: u32,
-        depth: u8
+        depth: u8,
     ) {
         match tree {
             HuffmanTree::Leaf { byte, .. } => {
