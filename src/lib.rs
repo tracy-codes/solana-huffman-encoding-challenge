@@ -57,7 +57,8 @@ impl Node {
     }
 }
 
-pub fn huffman_decode_url(instruction_data: &[u8]) -> (usize, [u8; 256]) {
+#[inline(always)]
+fn huffman_decode_url(instruction_data: &[u8]) -> (usize, [u8; 256]) {
     let mut result = [0u8; 256];
 
     let original_len = unsafe { *instruction_data.get_unchecked(0) } as usize;
