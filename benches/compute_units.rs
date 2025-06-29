@@ -56,8 +56,8 @@ impl HuffmanEncoder {
 
         if frequencies.len() == 1 {
             // Special case: single character
-            let byte = frequencies.keys().next().unwrap();
-            codes.insert(*byte, (0, 1));
+            let byte = *frequencies.keys().next().unwrap();
+            codes.insert(byte, (0, 1));
         } else {
             Self::generate_codes(&tree, &mut codes, 0, 0);
         }
@@ -141,7 +141,7 @@ impl HuffmanEncoder {
         let mut bit_count = 0u8;
 
         // First, write the tree
-        result.extend_from_slice(&(self.tree_bytes.len() as u32).to_le_bytes());
+        result.extend_from_slice(&(self.tree_bytes.len() as u16).to_le_bytes());
         result.extend_from_slice(&self.tree_bytes);
 
         // Then encode the data
@@ -184,9 +184,16 @@ pub fn mollusk() -> Mollusk {
 
 pub fn create_instruction_data(encoded_url: &[u8], original_size: u32) -> Vec<u8> {
     let mut data = Vec::new();
-    data.extend_from_slice(&original_size.to_le_bytes());
-    data.extend_from_slice(&(encoded_url.len() as u32).to_le_bytes());
-    data.extend_from_slice(encoded_url);
+
+    // Format: [original_len: 1][tree_size: 2][tree_data][encoded_bits]
+    data.push(original_size as u8); // Single byte for original length
+
+    // Extract tree size from encoded data (first 4 bytes as u32, convert to u16)
+    let tree_size = u16::from_le_bytes([encoded_url[0], encoded_url[1]]);
+
+    // data.extend_from_slice(&tree_size.to_le_bytes()); // u16 tree size
+    data.push(tree_size as u8); // Single byte for tree size (assuming <= 255)
+    data.extend_from_slice(&encoded_url[2..]); // Rest of encoded data (tree + bits)
     data
 }
 

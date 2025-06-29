@@ -1,4 +1,4 @@
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{ BinaryHeap, HashMap };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HuffmanTree {
@@ -36,7 +36,7 @@ impl PartialOrd for HuffmanTree {
 
 pub struct HuffmanEncoder {
     codes: HashMap<u8, (u32, u8)>, // byte -> (code, bit_length)
-    tree_bytes: Vec<u8>,           // Serialized tree for decoder
+    tree_bytes: Vec<u8>, // Serialized tree for decoder
 }
 
 impl HuffmanEncoder {
@@ -46,15 +46,14 @@ impl HuffmanEncoder {
         let mut codes = HashMap::new();
 
         if frequencies.len() == 1 {
-            // Special case: single character
-            let byte = frequencies.keys().next().unwrap();
-            codes.insert(*byte, (0, 1));
+            // Single character case
+            let byte = *frequencies.keys().next().unwrap();
+            codes.insert(byte, (0, 1));
         } else {
             Self::generate_codes(&tree, &mut codes, 0, 0);
         }
 
         let tree_bytes = Self::serialize_tree(&tree);
-
         Self { codes, tree_bytes }
     }
 
@@ -93,7 +92,7 @@ impl HuffmanEncoder {
         tree: &HuffmanTree,
         codes: &mut HashMap<u8, (u32, u8)>,
         code: u32,
-        depth: u8,
+        depth: u8
     ) {
         match tree {
             HuffmanTree::Leaf { byte, .. } => {
@@ -132,7 +131,7 @@ impl HuffmanEncoder {
         let mut bit_count = 0u8;
 
         // First, write the tree
-        result.extend_from_slice(&(self.tree_bytes.len() as u32).to_le_bytes());
+        result.extend_from_slice(&(self.tree_bytes.len() as u16).to_le_bytes());
         result.extend_from_slice(&self.tree_bytes);
 
         // Then encode the data
