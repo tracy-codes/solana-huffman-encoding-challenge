@@ -1,5 +1,8 @@
 # Solana CU-Efficient Huffman Encoding Challenge
 
+> [!NOTE]
+> The winner of this challenge is https://x.com/dorkydhruv with their submission https://github.com/tracy-codes/solana-huffman-encoding-challenge/pull/1 which is merged into the main branch here.
+
 The goal of this challenge is to create a CU-efficient implementation of Huffman Encoding in a Solana program. Specifically, huffman encoding URL strings to allow for large URL strings to be passed into Solana instructions while not eating up precious bytes in the transaction.
 
 The instruction must be able to then properly decode the input huffman encoded string. You can validate this by adding a log that displays the decoded string and comment it out for your CU submission run.
